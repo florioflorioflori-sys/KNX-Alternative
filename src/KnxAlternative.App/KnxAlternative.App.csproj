@@ -6,7 +6,6 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssemblyName>KnxAlternative</AssemblyName>
     <RootNamespace>KnxAlternative.App</RootNamespace>
-    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\KnxAlternative.Core\KnxAlternative.Core.csproj" />

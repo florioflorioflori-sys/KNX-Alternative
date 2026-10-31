@@ -1,0 +1,179 @@
+<Window x:Class="KnxAlternative.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KNX Alternative" Height="800" Width="1280" WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_Projekt">
+        <MenuItem Header="_Neu" Click="New_Click" InputGestureText="Strg+N"/>
+        <MenuItem Header="_Öffnen …" Click="Open_Click" InputGestureText="Strg+O"/>
+        <MenuItem Header="ETS-Projekt _importieren (.knxproj) …" Click="ImportEts_Click"/>
+        <Separator/>
+        <MenuItem Header="_Speichern" Click="Save_Click" InputGestureText="Strg+S"/>
+        <MenuItem Header="Speichern _unter …" Click="SaveAs_Click"/>
+        <MenuItem Header="Sicherung ins _Archiv" Click="Backup_Click"/>
+        <Separator/>
+        <MenuItem Header="Gruppenadressen _exportieren (CSV) …" Click="ExportCsv_Click"/>
+        <MenuItem Header="Gruppenadressen i_mportieren (CSV) …" Click="ImportCsv_Click"/>
+        <Separator/>
+        <MenuItem Header="_Beenden" Click="Exit_Click"/>
+      </MenuItem>
+      <MenuItem Header="_Inbetriebnahme">
+        <MenuItem Header="_Physikalische Adresse programmieren …" Click="ProgramAddress_Click"/>
+        <MenuItem Header="Physikalische Adresse über _Seriennummer …" Click="ProgramBySerial_Click"/>
+        <MenuItem Header="_Geräteinfo lesen" Click="DeviceInfo_Click"/>
+        <MenuItem Header="Gerät _neu starten" Click="Restart_Click"/>
+      </MenuItem>
+      <MenuItem Header="_Diagnose">
+        <MenuItem Header="Geräte im _Programmiermodus suchen" Click="FindProgMode_Click"/>
+        <MenuItem Header="Physikalische Adresse _prüfen …" Click="CheckAddress_Click"/>
+        <MenuItem Header="_Linie scannen …" Click="ScanLine_Click"/>
+      </MenuItem>
+      <MenuItem Header="_Hilfe">
+        <MenuItem Header="_Über KNX Alternative" Click="About_Click"/>
+      </MenuItem>
+    </Menu>
+
+    <!-- Connection bar -->
+    <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDD" BorderThickness="0,0,0,1" Padding="8,6">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="Schnittstelle:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+        <ComboBox x:Name="InterfaceBox" Width="320" IsEditable="True" ToolTip="IP-Adresse der Schnittstelle oder gefundene Schnittstelle wählen"/>
+        <Button Content="Suchen" Click="Discover_Click" Margin="6,0,6,0"/>
+        <CheckBox x:Name="RoutingBox" Content="Routing (Multicast)" VerticalAlignment="Center" Margin="0,0,12,0"/>
+        <Button x:Name="ConnectButton" Content="Verbinden" Click="Connect_Click"/>
+        <Ellipse x:Name="StateDot" Width="12" Height="12" Fill="Gray" Margin="6,0" VerticalAlignment="Center"/>
+        <TextBlock x:Name="StateText" Text="Nicht verbunden" VerticalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
+    <StatusBar DockPanel.Dock="Bottom">
+      <StatusBarItem><TextBlock x:Name="StatusText" Text="Bereit"/></StatusBarItem>
+      <StatusBarItem HorizontalAlignment="Right"><TextBlock x:Name="ProjectText"/></StatusBarItem>
+    </StatusBar>
+
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="300" MinWidth="180"/>
+        <ColumnDefinition Width="5"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <TabControl Grid.Column="0" x:Name="LeftTabs">
+        <TabItem Header="Gebäude">
+          <TreeView x:Name="BuildingTree" SelectedItemChanged="Tree_SelectedItemChanged"/>
+        </TabItem>
+        <TabItem Header="Topologie">
+          <TreeView x:Name="TopologyTree" SelectedItemChanged="Tree_SelectedItemChanged"/>
+        </TabItem>
+        <TabItem Header="Gruppenadressen">
+          <TreeView x:Name="GroupTree" SelectedItemChanged="Tree_SelectedItemChanged"/>
+        </TabItem>
+      </TabControl>
+
+      <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch"/>
+
+      <TabControl Grid.Column="2" x:Name="MainTabs">
+        <TabItem Header="Gruppenadressen">
+          <DockPanel Margin="4">
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+              <Button Content="Neue Gruppenadresse …" Click="AddGa_Click"/>
+              <Button Content="Löschen" Click="DeleteGa_Click"/>
+              <TextBlock Text="Wert:" VerticalAlignment="Center" Margin="12,0,6,0"/>
+              <TextBox x:Name="GaValueBox" Width="120" ToolTip="z. B. ein, aus, 50, 21.5"/>
+              <Button Content="Schreiben" Click="WriteGa_Click" Margin="6,0,6,0"/>
+              <Button Content="Lesen" Click="ReadGa_Click"/>
+              <TextBlock Text="Filter:" VerticalAlignment="Center" Margin="12,0,6,0"/>
+              <TextBox x:Name="GaFilterBox" Width="160" TextChanged="GaFilter_Changed"/>
+            </StackPanel>
+            <DataGrid x:Name="GaGrid" CellEditEnding="Grid_CellEditEnding">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Adresse" Binding="{Binding AddressText}" IsReadOnly="True" Width="80"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding Entry.Name}" Width="2*"/>
+                <DataGridTextColumn Header="Datenpunkttyp" Binding="{Binding Entry.DatapointType}" Width="110"/>
+                <DataGridTextColumn Header="Typ" Binding="{Binding DptText}" IsReadOnly="True" Width="*"/>
+                <DataGridTextColumn Header="Raum" Binding="{Binding Entry.Room}" Width="*"/>
+                <DataGridTextColumn Header="Funktion" Binding="{Binding Entry.Function}" Width="*"/>
+                <DataGridTextColumn Header="Verknüpft" Binding="{Binding LinkCount}" IsReadOnly="True" Width="70"/>
+                <DataGridTextColumn Header="Letzter Wert" Binding="{Binding LastValue}" IsReadOnly="True" Width="*"/>
+                <DataGridTextColumn Header="Beschreibung" Binding="{Binding Entry.Description}" Width="*"/>
+              </DataGrid.Columns>
+            </DataGrid>
+          </DockPanel>
+        </TabItem>
+
+        <TabItem Header="Geräte">
+          <Grid Margin="4">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+              <RowDefinition Height="5"/>
+              <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+              <Button Content="Neues Gerät …" Click="AddDevice_Click"/>
+              <Button Content="Löschen" Click="DeleteDevice_Click"/>
+              <Button Content="Physikalische Adresse programmieren" Click="ProgramAddress_Click"/>
+              <Button Content="Geräteinfo" Click="DeviceInfo_Click"/>
+              <Button Content="Neustart" Click="Restart_Click"/>
+              <Button Content="Gruppenadresse verknüpfen …" Click="LinkGa_Click"/>
+            </StackPanel>
+            <DataGrid Grid.Row="1" x:Name="DeviceGrid" SelectionChanged="DeviceGrid_SelectionChanged" CellEditEnding="Grid_CellEditEnding">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Adresse" Binding="{Binding AddressText, Mode=OneWay}" IsReadOnly="True" Width="70"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2*"/>
+                <DataGridTextColumn Header="Hersteller" Binding="{Binding Manufacturer}" IsReadOnly="True" Width="*"/>
+                <DataGridTextColumn Header="Produkt" Binding="{Binding ProductName}" IsReadOnly="True" Width="2*"/>
+                <DataGridTextColumn Header="Bestellnr." Binding="{Binding OrderNumber}" IsReadOnly="True" Width="*"/>
+                <DataGridTextColumn Header="Applikation" Binding="{Binding ApplicationProgram}" IsReadOnly="True" Width="2*"/>
+                <DataGridTextColumn Header="Seriennr." Binding="{Binding SerialNumber}" Width="110"/>
+                <DataGridCheckBoxColumn Header="PA" Binding="{Binding AddressLoaded}" IsReadOnly="True" Width="35"/>
+                <DataGridCheckBoxColumn Header="Prg" Binding="{Binding ApplicationLoaded}" IsReadOnly="True" Width="35"/>
+              </DataGrid.Columns>
+            </DataGrid>
+            <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch"/>
+            <DataGrid Grid.Row="3" x:Name="ComObjectGrid" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Nr." Binding="{Binding Number}" Width="45"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2*"/>
+                <DataGridTextColumn Header="Funktion" Binding="{Binding Function}" Width="2*"/>
+                <DataGridTextColumn Header="Größe" Binding="{Binding ObjectSize}" Width="70"/>
+                <DataGridTextColumn Header="Datenpunkttyp" Binding="{Binding DatapointType}" Width="110"/>
+                <DataGridTextColumn Header="Flags" Binding="{Binding Flags}" Width="60"/>
+                <DataGridTextColumn Header="Gruppenadressen" Binding="{Binding Links}" Width="2*"/>
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </TabItem>
+
+        <TabItem Header="Gruppenmonitor">
+          <DockPanel Margin="4">
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+              <ToggleButton x:Name="MonitorPause" Content="Pause" Padding="10,3" Margin="0,0,6,0"/>
+              <Button Content="Leeren" Click="ClearMonitor_Click"/>
+              <CheckBox x:Name="MonitorAllBox" Content="Auch Verwaltungstelegramme" VerticalAlignment="Center" Margin="12,0,0,0"/>
+              <Button Content="Speichern …" Click="SaveMonitor_Click" Margin="12,0,0,0"/>
+            </StackPanel>
+            <DataGrid x:Name="MonitorGrid" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Zeit" Binding="{Binding Time, StringFormat=HH:mm:ss.fff}" Width="95"/>
+                <DataGridTextColumn Header="Quelle" Binding="{Binding Source}" Width="75"/>
+                <DataGridTextColumn Header="Quellgerät" Binding="{Binding SourceName}" Width="*"/>
+                <DataGridTextColumn Header="Ziel" Binding="{Binding Destination}" Width="75"/>
+                <DataGridTextColumn Header="Zielname" Binding="{Binding DestinationName}" Width="2*"/>
+                <DataGridTextColumn Header="Dienst" Binding="{Binding Service}" Width="140"/>
+                <DataGridTextColumn Header="Wert" Binding="{Binding Value}" Width="*"/>
+                <DataGridTextColumn Header="Rohdaten" Binding="{Binding Raw}" Width="*"/>
+              </DataGrid.Columns>
+            </DataGrid>
+          </DockPanel>
+        </TabItem>
+
+        <TabItem Header="Protokoll">
+          <TextBox x:Name="LogBox" IsReadOnly="True" FontFamily="Consolas" VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap" Margin="4"/>
+        </TabItem>
+      </TabControl>
+    </Grid>
+  </DockPanel>
+</Window>
